@@ -13,40 +13,40 @@ import (
 // Bucket defines a Kubernetes subsystem and the path-prefix matchers used to
 // filter Qdrant results into that bucket.
 type Bucket struct {
-	Name        string
-	ProbeQuery  string
+	Name         string
+	ProbeQuery   string
 	PathPrefixes []string
 }
 
 var k8sBuckets = []Bucket{
 	{
-		Name:        "apiserver",
-		ProbeQuery:  "API server request handling admission webhook authentication authorization",
+		Name:         "apiserver",
+		ProbeQuery:   "API server request handling admission webhook authentication authorization",
 		PathPrefixes: []string{"pkg/apiserver", "staging/src/k8s.io/apiserver"},
 	},
 	{
-		Name:        "controllers",
-		ProbeQuery:  "controller reconciliation loop desired state observed state workqueue informer",
+		Name:         "controllers",
+		ProbeQuery:   "controller reconciliation loop desired state observed state workqueue informer",
 		PathPrefixes: []string{"pkg/controller"},
 	},
 	{
-		Name:        "scheduler",
-		ProbeQuery:  "scheduler pod binding node selection priority preemption filter score",
+		Name:         "scheduler",
+		ProbeQuery:   "scheduler pod binding node selection priority preemption filter score",
 		PathPrefixes: []string{"pkg/scheduler"},
 	},
 	{
-		Name:        "kubelet",
-		ProbeQuery:  "kubelet pod lifecycle container runtime node agent sync",
+		Name:         "kubelet",
+		ProbeQuery:   "kubelet pod lifecycle container runtime node agent sync",
 		PathPrefixes: []string{"pkg/kubelet"},
 	},
 	{
-		Name:        "storage",
-		ProbeQuery:  "storage etcd persistent volume claim watch list",
+		Name:         "storage",
+		ProbeQuery:   "storage etcd persistent volume claim watch list",
 		PathPrefixes: []string{"pkg/storage", "staging/src/k8s.io/apiextensions-apiserver"},
 	},
 	{
-		Name:        "admission",
-		ProbeQuery:  "admission webhook validation mutation policy enforcement plugin",
+		Name:         "admission",
+		ProbeQuery:   "admission webhook validation mutation policy enforcement plugin",
 		PathPrefixes: []string{"plugin/pkg/admission"},
 	},
 }
@@ -85,12 +85,12 @@ func (d *Distiller) retrieveBuckets(ctx context.Context) (map[string][]string, e
 // ─── Stage 2: Responsibility Extraction ──────────────────────────────────────
 
 type Responsibility struct {
-	Component            string   `json:"component"`
-	CoreResponsibility   string   `json:"core_responsibility"`
-	StateManaged         []string `json:"state_managed"`
-	EventSources         []string `json:"event_sources"`
-	ReconciliationLogic  string   `json:"reconciliation_logic"`
-	FailureHandling      string   `json:"failure_handling"`
+	Component           string   `json:"component"`
+	CoreResponsibility  string   `json:"core_responsibility"`
+	StateManaged        []string `json:"state_managed"`
+	EventSources        []string `json:"event_sources"`
+	ReconciliationLogic string   `json:"reconciliation_logic"`
+	FailureHandling     string   `json:"failure_handling"`
 }
 
 func (d *Distiller) stageResponsibilities(ctx context.Context, buckets map[string][]string) error {

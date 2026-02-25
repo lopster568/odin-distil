@@ -1,13 +1,13 @@
 package ingester
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Chunk struct {
@@ -125,7 +125,9 @@ func parseFile(path string) ([]Chunk, error) {
 		case *ast.FuncDecl:
 			start := fset.Position(d.Pos()).Offset
 			end := fset.Position(d.End()).Offset
-			if end > len(src) { end = len(src) }
+			if end > len(src) {
+				end = len(src)
+			}
 			text := string(src[start:end])
 			if d.Doc != nil {
 				cs := fset.Position(d.Doc.Pos()).Offset
@@ -139,7 +141,9 @@ func parseFile(path string) ([]Chunk, error) {
 		case *ast.GenDecl:
 			start := fset.Position(d.Pos()).Offset
 			end := fset.Position(d.End()).Offset
-			if end > len(src) { end = len(src) }
+			if end > len(src) {
+				end = len(src)
+			}
 			chunks = append(chunks, Chunk{Text: string(src[start:end]), FilePath: path, Package: pkgName})
 		}
 	}
@@ -165,7 +169,9 @@ func chunkRaw(path, src string) []Chunk {
 	var chunks []Chunk
 	for i := 0; i < len(lines); i += chunkSize {
 		end := i + chunkSize
-		if end > len(lines) { end = len(lines) }
+		if end > len(lines) {
+			end = len(lines)
+		}
 		chunks = append(chunks, Chunk{
 			Text:     strings.Join(lines[i:end], "\n"),
 			FilePath: path,

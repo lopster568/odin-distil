@@ -63,12 +63,12 @@ func (s *Store) Upsert(ctx context.Context, chunks []Chunk) error {
 			Id:      qdrant.NewIDNum(c.ID),
 			Vectors: qdrant.NewVectors(c.Vector...),
 			Payload: qdrant.NewValueMap(map[string]any{
-				"text":       c.Text,
-				"filepath":   c.FilePath,
-				"package":    c.Package,
-				"symbol":     c.Symbol,
-				"repo":       c.Repo,
-				"dirprefix":  c.DirPrefix,
+				"text":      c.Text,
+				"filepath":  c.FilePath,
+				"package":   c.Package,
+				"symbol":    c.Symbol,
+				"repo":      c.Repo,
+				"dirprefix": c.DirPrefix,
 			}),
 		}
 	}
