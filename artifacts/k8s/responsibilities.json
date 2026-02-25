@@ -1,0 +1,94 @@
+[
+  {
+    "component": "controllers",
+    "core_responsibility": "Manages the attachment and detachment of volumes to nodes in a Kubernetes cluster.",
+    "state_managed": [
+      "desiredStateOfWorld",
+      "actualStateOfWorld"
+    ],
+    "event_sources": [
+      "NodeLister",
+      "EventRecorder"
+    ],
+    "reconciliation_logic": "Compares the desired state of world with the actual state of world, and performs operations to align them, such as attaching or detaching volumes.",
+    "failure_handling": "Uses a loop period for periodic reconciliation attempts, implements timeouts for unmounting, and can disable force detach on timeout. Events are recorded for tracking and auditing."
+  },
+  {
+    "component": "scheduler",
+    "core_responsibility": "The DefaultPreemption component is responsible for determining and managing pod preemption to ensure higher priority pods can be scheduled.",
+    "state_managed": [
+      "eligible victim pods",
+      "preemptor pods"
+    ],
+    "event_sources": [
+      "pod scheduling requests",
+      "node capacity changes"
+    ],
+    "reconciliation_logic": "The scheduler evaluates the current state of pods and nodes, identifies eligible victim pods with lower priority, and preempts them to make room for higher priority pods.",
+    "failure_handling": "In case of failure, the scheduler retries the preemption logic with exponential backoff and logs errors for further investigation."
+  },
+  {
+    "component": "kubelet",
+    "core_responsibility": "Manages pod lifecycle events, resource allocation, and reconciliation of desired state on a node.",
+    "state_managed": [
+      "memory allocation for guaranteed pods",
+      "CPU assignment policies",
+      "container resources state"
+    ],
+    "event_sources": [
+      "pod lifecycle events",
+      "API server updates",
+      "reconciliation loop timer"
+    ],
+    "reconciliation_logic": "Periodically checks the actual state against the desired state and makes necessary adjustments to align with the desired configuration, such as updating container resources or removing stale state.",
+    "failure_handling": "Uses retry mechanisms with exponential backoff for transient failures, and propagates errors to higher-level systems when reconciliation cannot be achieved."
+  },
+  {
+    "component": "storage",
+    "core_responsibility": "Manages and updates metrics related to etcd storage such as lease object counts, database size, and bookmarks.",
+    "state_managed": [
+      "etcd_lease_object_counts",
+      "etcd_db_total_size_in_bytes",
+      "etcd_bookmark_counts"
+    ],
+    "event_sources": [
+      "etcd server status responses",
+      "database size monitoring intervals",
+      "lease object creation events",
+      "bookmark events"
+    ],
+    "reconciliation_logic": "Monitors etcd endpoints and updates metrics based on the actual state of the database, such as lease counts and database sizes. Uses JitterUntil to handle periodic checks with backoff.",
+    "failure_handling": "In case of failures to fetch data from etcd (e.g., status responses), logs the error and sets the metric to -1, indicating an issue. Uses context cancellation for graceful shutdown."
+  },
+  {
+    "component": "admission",
+    "core_responsibility": "Intercepts pod creation and update requests to enforce image policy by querying a remote webhook backend.",
+    "state_managed": [
+      "pod",
+      "annotations",
+      "responseCache"
+    ],
+    "event_sources": [
+      "pod create",
+      "pod update"
+    ],
+    "reconciliation_logic": "Compares the desired state (pod creation or update) with the actual state enforced by the webhook. If the webhook allows, the operation proceeds; if it denies, the operation is rejected.",
+    "failure_handling": "On failure, retries are handled according to a backoff strategy defined in the configuration. If the backend fails and defaultAllow is true, the pod is allowed with an annotation indicating the failure; otherwise, the request is denied."
+  },
+  {
+    "component": "apiserver",
+    "core_responsibility": "Serves as the central management entity for Kubernetes, handling API requests and state management.",
+    "state_managed": [
+      "Webhook configurations",
+      "Authorization decisions cache",
+      "Client authentication credentials"
+    ],
+    "event_sources": [
+      "API requests",
+      "Webhook responses",
+      "Authentication attempts"
+    ],
+    "reconciliation_logic": "Compares the current state of resources with the desired state as defined in API requests and applies changes to align them, including invoking webhooks for admission control.",
+    "failure_handling": "Implements retry mechanisms for failed webhook calls, uses configurable failure policies (Deny or NoOpinion) to handle errors, and caches authorization decisions to reduce latency."
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "State Reconciliation",
+    "description": "A pattern where components maintain a desired state of the world and an actual state of the world, and continuously reconcile these states to ensure that the system is in the desired configuration.",
+    "examples": [
+      "controllers",
+      "scheduler",
+      "kubelet",
+      "storage",
+      "admission",
+      "apiserver"
+    ]
+  },
+  {
+    "name": "Event-Driven Architecture",
+    "description": "A pattern where components react to events or changes from external sources, such as API requests, pod lifecycle events, or etcd status responses, and trigger actions based on these events.",
+    "examples": [
+      "controllers",
+      "scheduler",
+      "kubelet",
+      "storage",
+      "admission",
+      "apiserver"
+    ]
+  },
+  {
+    "name": "Exponential Backoff",
+    "description": "A pattern used in failure handling where components retry operations with increasing intervals to handle transient failures, reducing the load on the system and improving robustness.",
+    "examples": [
+      "scheduler",
+      "kubelet",
+      "storage",
+      "admission"
+    ]
+  },
+  {
+    "name": "State Management",
+    "description": "A pattern where components manage internal state representations, such as desired and actual states, to track and control the lifecycle of resources or operations.",
+    "examples": [
+      "controllers",
+      "scheduler",
+      "kubelet",
+      "storage",
+      "admission",
+      "apiserver"
+    ]
+  },
+  {
+    "name": "Webhook Integration",
+    "description": "A pattern where components integrate with external webhooks for extended functionality, such as admission control or policy enforcement, and handle responses from these webhooks.",
+    "examples": [
+      "admission",
+      "apiserver"
+    ]
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "area": "controllers",
+    "friction_type": "complexity",
+    "rationale": "The reconciliation logic involves multiple state checks and operations, which can be difficult to understand and debug.",
+    "opportunity": "Refactor the controllers' reconciliation logic into smaller, more modular functions with clear responsibilities. Add unit tests for each function to ensure correctness."
+  },
+  {
+    "area": "scheduler",
+    "friction_type": "coupling",
+    "rationale": "The DefaultPreemption component is tightly coupled with pod and node state management, making it hard to modify or extend.",
+    "opportunity": "Decouple the preemption logic from specific state management by introducing interfaces for state access. This would allow easier testing and extension of the scheduler's functionality."
+  },
+  {
+    "area": "kubelet",
+    "friction_type": "missing abstraction",
+    "rationale": "The kubelet manages multiple aspects of pod lifecycle and resource allocation, leading to a complex and monolithic codebase.",
+    "opportunity": "Introduce abstractions for different aspects of the kubelet's responsibilities, such as separate managers for memory allocation, CPU assignment, and container resources. This would make the code more modular and easier to maintain."
+  },
+  {
+    "area": "storage",
+    "friction_type": "poor observability",
+    "rationale": "The storage component logs errors but lacks detailed metrics or monitoring capabilities, making it hard to diagnose issues.",
+    "opportunity": "Enhance the storage component with more detailed metrics and logging. Implement a health check endpoint that can be queried to assess the state of etcd and other storage-related metrics."
+  },
+  {
+    "area": "admission",
+    "friction_type": "complexity",
+    "rationale": "The admission control logic involves multiple steps, including remote webhook queries, caching, and error handling, which can be difficult to follow.",
+    "opportunity": "Simplify the admission control logic by breaking it down into smaller, more focused functions. Introduce a clear flow diagram or sequence chart to document the process for contributors."
+  },
+  {
+    "area": "apiserver",
+    "friction_type": "coupling",
+    "rationale": "The apiserver is tightly integrated with various subsystems and components, making it challenging to test and modify in isolation.",
+    "opportunity": "Introduce interfaces and mocks for dependencies such as webhooks and authorization caches. This would allow more isolated testing of the apiserver's core functionalities."
+  }
+]

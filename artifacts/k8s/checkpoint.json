@@ -1,0 +1,9 @@
+{
+  "completed": {
+    "control_loops": true,
+    "friction": true,
+    "patterns": true,
+    "responsibilities": true,
+    "study_topics": true
+  }
+}
