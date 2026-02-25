@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"odin/internal/distill"
 	"odin/internal/embedder"
 	"odin/internal/ingester"
 	"odin/internal/llm"
@@ -20,9 +21,10 @@ const repoRoot = "/root/repos"
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: odin <ingest|ask> [args]")
-		fmt.Println("  odin ingest <path>   - index a Go source tree")
-		fmt.Println("  odin ask             - interactive agent session")
+		fmt.Println("Usage: odin <ingest|distill|ask> [args]")
+		fmt.Println("  odin ingest <path>      - index a Go source tree")
+		fmt.Println("  odin distill [k8s]      - run architecture distillation pipeline")
+		fmt.Println("  odin ask                - interactive agent session")
 		os.Exit(1)
 	}
 
@@ -42,6 +44,14 @@ func main() {
 			log.Fatal("usage: odin ingest <path>")
 		}
 		runIngest(ctx, os.Args[2], llmClient, st)
+	case "distill":
+		target := "k8s"
+		if len(os.Args) >= 3 {
+			target = os.Args[2]
+		}
+		artifactsDir := fmt.Sprintf("artifacts/%s", target)
+		d := distill.New(llmClient, st, artifactsDir)
+		must(d.Run(ctx), "distill")
 	case "ask":
 		runAgent(ctx, llmClient, st)
 	default:
