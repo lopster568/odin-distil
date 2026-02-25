@@ -14,11 +14,13 @@ tar czf ~/qdrant-snapshot.tar.gz ~/qdrant-storage
 ```
 
 Then from your local machine:
+
 ```bash
 scp root@<vm-ip>:~/qdrant-snapshot.tar.gz ~/qdrant-snapshot.tar.gz
 ```
 
 ### Also grab artifacts if distillation completed:
+
 ```bash
 scp -r root@<vm-ip>:~/odin/artifacts ~/odin-distil/artifacts
 ```
@@ -27,12 +29,12 @@ scp -r root@<vm-ip>:~/odin/artifacts ~/odin-distil/artifacts
 
 ### Delete / Don't Bother Saving
 
-| Thing | Why |
-|---|---|
+| Thing                                             | Why                                              |
+| ------------------------------------------------- | ------------------------------------------------ |
 | Ollama models (`qwen2.5:72b`, `nomic-embed-text`) | Re-pull with `ollama pull` — ~50GB but automated |
-| `/root/repos` (k8s source) | `git clone` — no custom state |
-| `odin` binary | `go build ./cmd/odin/` — 2 seconds |
-| Qdrant Docker image | Re-pulled automatically on `docker run` |
+| `/root/repos` (k8s source)                        | `git clone` — no custom state                    |
+| `odin` binary                                     | `go build ./cmd/odin/` — 2 seconds               |
+| Qdrant Docker image                               | Re-pulled automatically on `docker run`          |
 
 ---
 
@@ -73,12 +75,14 @@ docker run -d \
 ```
 
 Verify 128k vectors are back:
+
 ```bash
 curl -s http://localhost:6333/collections/odin_k8s | \
   python3 -c "import sys,json; d=json.load(sys.stdin); print(d['result']['points_count'])"
 ```
 
 **If snapshot is lost** (full re-ingest):
+
 ```bash
 git clone https://github.com/kubernetes/kubernetes /root/repos/kubernetes
 ./odin ingest /root/repos/kubernetes
@@ -115,14 +119,14 @@ cp -r ~/odin-distil/artifacts ~/odin/artifacts
 
 ## Quick Reference
 
-| Service | Port | How to start |
-|---|---|---|
-| Ollama | `11434` (HTTP) | `ollama serve` or auto-starts |
-| Qdrant | `6333` (REST), `6334` (gRPC) | `docker start qdrant` |
+| Service | Port                         | How to start                  |
+| ------- | ---------------------------- | ----------------------------- |
+| Ollama  | `11434` (HTTP)               | `ollama serve` or auto-starts |
+| Qdrant  | `6333` (REST), `6334` (gRPC) | `docker start qdrant`         |
 
-| Command | What it does |
-|---|---|
-| `./odin ingest <path>` | Index a source tree into Qdrant |
-| `./odin ask` | Interactive RAG REPL |
-| `./odin distill k8s` | Run 6-stage distillation pipeline |
-| `./scripts/health.sh` | Check GPU + Ollama + Qdrant + ingest jobs |
+| Command                | What it does                              |
+| ---------------------- | ----------------------------------------- |
+| `./odin ingest <path>` | Index a source tree into Qdrant           |
+| `./odin ask`           | Interactive RAG REPL                      |
+| `./odin distill k8s`   | Run 6-stage distillation pipeline         |
+| `./scripts/health.sh`  | Check GPU + Ollama + Qdrant + ingest jobs |
