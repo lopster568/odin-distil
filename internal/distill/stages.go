@@ -311,6 +311,10 @@ func buildContext(chunks []string, maxRunes int) string {
 }
 
 // extractJSON attempts to pull the first JSON object or array from raw LLM output.
+// It handles common LLM failure modes:
+//   - markdown code fences wrapping the JSON
+//   - array items returned without the opening '[' (starts with '{', ends with ']')
+//   - leading prose before the first '[' or '{'
 func extractJSON(raw string) string {
 	raw = strings.TrimSpace(raw)
 	// Strip markdown fences if present
@@ -322,14 +326,30 @@ func extractJSON(raw string) string {
 	if idx := strings.LastIndex(raw, "```"); idx >= 0 {
 		raw = raw[:idx]
 	}
-	// Find the start of JSON
-	for _, start := range []string{"{", "["} {
+	raw = strings.TrimSpace(raw)
+
+	// Find the start of JSON — prefer '[' (array) before '{' (object) so that
+	// array responses aren't accidentally trimmed to a single object.
+	for _, start := range []string{"[", "{"} {
 		if idx := strings.Index(raw, start); idx >= 0 {
 			raw = raw[idx:]
 			break
 		}
 	}
-	return strings.TrimSpace(raw)
+	raw = strings.TrimSpace(raw)
+
+	// Heal: LLM sometimes emits array items without the opening '['.
+	// Symptoms: starts with '{', ends with ']'.
+	if strings.HasPrefix(raw, "{") && strings.HasSuffix(raw, "]") {
+		raw = "[" + raw
+	}
+	// Heal: LLM sometimes emits a bare array without the closing ']'.
+	// Symptoms: starts with '[', doesn't end with ']' or '}'.
+	if strings.HasPrefix(raw, "[") && !strings.HasSuffix(raw, "]") {
+		raw = raw + "]"
+	}
+
+	return raw
 }
 
 // writeJSON marshals v and writes to path with MkdirAll.
