@@ -13,11 +13,13 @@ import (
 const maxChunkRunes = 6000 // safe limit for nomic-embed-text
 
 type EmbeddedChunk struct {
-	Text     string
-	FilePath string
-	Package  string
-	Symbol   string
-	Vector   []float32
+	Text      string
+	FilePath  string
+	Package   string
+	Symbol    string
+	Repo      string
+	DirPrefix string
+	Vector    []float32
 }
 
 type Embedder struct {
@@ -49,11 +51,13 @@ func (e *Embedder) EmbedChunks(ctx context.Context, chunks []ingester.Chunk) ([]
 			return nil, fmt.Errorf("embed %s: %w", c.FilePath, err)
 		}
 		out = append(out, EmbeddedChunk{
-			Text:     text,
-			FilePath: c.FilePath,
-			Package:  c.Package,
-			Symbol:   c.Symbol,
-			Vector:   vec,
+			Text:      text,
+			FilePath:  c.FilePath,
+			Package:   c.Package,
+			Symbol:    c.Symbol,
+			Repo:      c.Repo,
+			DirPrefix: c.DirPrefix,
+			Vector:    vec,
 		})
 	}
 	return out, nil

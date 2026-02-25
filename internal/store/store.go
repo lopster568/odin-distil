@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/qdrant/go-client/qdrant"
 )
@@ -45,12 +46,14 @@ func (s *Store) EnsureCollection(ctx context.Context) error {
 }
 
 type Chunk struct {
-	ID       uint64
-	Text     string
-	FilePath string
-	Package  string
-	Symbol   string // function/type name if available
-	Vector   []float32
+	ID        uint64
+	Text      string
+	FilePath  string
+	Package   string
+	Symbol    string // function/type name if available
+	Repo      string
+	DirPrefix string
+	Vector    []float32
 }
 
 func (s *Store) Upsert(ctx context.Context, chunks []Chunk) error {
@@ -60,10 +63,12 @@ func (s *Store) Upsert(ctx context.Context, chunks []Chunk) error {
 			Id:      qdrant.NewIDNum(c.ID),
 			Vectors: qdrant.NewVectors(c.Vector...),
 			Payload: qdrant.NewValueMap(map[string]any{
-				"text":     c.Text,
-				"filepath": c.FilePath,
-				"package":  c.Package,
-				"symbol":   c.Symbol,
+				"text":       c.Text,
+				"filepath":   c.FilePath,
+				"package":    c.Package,
+				"symbol":     c.Symbol,
+				"repo":       c.Repo,
+				"dirprefix":  c.DirPrefix,
 			}),
 		}
 	}
@@ -75,14 +80,31 @@ func (s *Store) Upsert(ctx context.Context, chunks []Chunk) error {
 }
 
 type Result struct {
-	Text     string
-	FilePath string
-	Package  string
-	Symbol   string
-	Score    float32
+	Text      string
+	FilePath  string
+	Package   string
+	Symbol    string
+	Repo      string
+	DirPrefix string
+	Score     float32
 }
 
 func (s *Store) Search(ctx context.Context, vector []float32, limit uint64) ([]Result, error) {
+	return s.search(ctx, vector, limit, "")
+}
+
+// SearchWithFilter performs a vector search and post-filters results to those whose
+// filepath contains pathPrefix. Pass empty string to skip filtering.
+func (s *Store) SearchWithFilter(ctx context.Context, vector []float32, limit uint64, pathPrefix string) ([]Result, error) {
+	// Fetch more than needed to have enough after prefix filtering.
+	fetchLimit := limit * 5
+	if fetchLimit < 200 {
+		fetchLimit = 200
+	}
+	return s.search(ctx, vector, fetchLimit, pathPrefix)
+}
+
+func (s *Store) search(ctx context.Context, vector []float32, limit uint64, pathPrefix string) ([]Result, error) {
 	resp, err := s.client.Query(ctx, &qdrant.QueryPoints{
 		CollectionName: Collection,
 		Query:          qdrant.NewQuery(vector...),
@@ -92,16 +114,22 @@ func (s *Store) Search(ctx context.Context, vector []float32, limit uint64) ([]R
 	if err != nil {
 		return nil, fmt.Errorf("search: %w", err)
 	}
-	results := make([]Result, len(resp))
-	for i, p := range resp {
+	results := make([]Result, 0, len(resp))
+	for _, p := range resp {
 		pl := p.Payload
-		results[i] = Result{
-			Text:     pl["text"].GetStringValue(),
-			FilePath: pl["filepath"].GetStringValue(),
-			Package:  pl["package"].GetStringValue(),
-			Symbol:   pl["symbol"].GetStringValue(),
-			Score:    p.Score,
+		fp := pl["filepath"].GetStringValue()
+		if pathPrefix != "" && !strings.Contains(fp, pathPrefix) {
+			continue
 		}
+		results = append(results, Result{
+			Text:      pl["text"].GetStringValue(),
+			FilePath:  fp,
+			Package:   pl["package"].GetStringValue(),
+			Symbol:    pl["symbol"].GetStringValue(),
+			Repo:      pl["repo"].GetStringValue(),
+			DirPrefix: pl["dirprefix"].GetStringValue(),
+			Score:     p.Score,
+		})
 	}
 	return results, nil
 }

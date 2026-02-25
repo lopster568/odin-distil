@@ -72,12 +72,14 @@ func runIngest(ctx context.Context, root string, llmClient *llm.Client, st *stor
 		storeChunks := make([]store.Chunk, len(sc))
 		for j, c := range sc {
 			storeChunks[j] = store.Chunk{
-				ID:       hash(c.FilePath + c.Symbol + fmt.Sprint(i+j)),
-				Text:     c.Text,
-				FilePath: c.FilePath,
-				Package:  c.Package,
-				Symbol:   c.Symbol,
-				Vector:   c.Vector,
+				ID:        hash(c.FilePath + c.Symbol + fmt.Sprint(i+j)),
+				Text:      c.Text,
+				FilePath:  c.FilePath,
+				Package:   c.Package,
+				Symbol:    c.Symbol,
+				Repo:      c.Repo,
+				DirPrefix: c.DirPrefix,
+				Vector:    c.Vector,
 			}
 		}
 		if err := st.Upsert(ctx, storeChunks); err != nil {

@@ -11,10 +11,12 @@ import (
 )
 
 type Chunk struct {
-	Text     string
-	FilePath string
-	Package  string
-	Symbol   string
+	Text      string
+	FilePath  string
+	Package   string
+	Symbol    string
+	Repo      string // top-level directory name under root
+	DirPrefix string // first 3 path segments relative to root
 }
 
 func Walk(root string) ([]Chunk, error) {
@@ -30,20 +32,46 @@ func Walk(root string) ([]Chunk, error) {
 			}
 			return nil
 		}
+
+		// compute repo name and dir prefix relative to root
+		rel, _ := filepath.Rel(root, path)
+		parts := strings.SplitN(filepath.ToSlash(rel), "/", 4)
+		repo := ""
+		if len(parts) > 0 {
+			repo = parts[0]
+		}
+		dirSegs := parts
+		if len(dirSegs) > 3 {
+			dirSegs = dirSegs[:3]
+		}
+		dirPrefix := strings.Join(dirSegs[:max(0, len(dirSegs)-1)], "/")
+
+		var newChunks []Chunk
 		switch {
 		case strings.HasSuffix(path, ".go"):
 			c, err := parseFile(path)
 			if err != nil {
 				return nil
 			}
-			chunks = append(chunks, c...)
+			newChunks = c
 		case strings.HasSuffix(path, ".md"):
-			c := chunkMarkdown(path)
-			chunks = append(chunks, c...)
+			newChunks = chunkMarkdown(path)
 		}
+		for i := range newChunks {
+			newChunks[i].Repo = repo
+			newChunks[i].DirPrefix = dirPrefix
+		}
+		chunks = append(chunks, newChunks...)
 		return nil
 	})
 	return chunks, err
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func chunkMarkdown(path string) []Chunk {
