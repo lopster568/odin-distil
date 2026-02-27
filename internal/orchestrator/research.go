@@ -61,8 +61,7 @@ When all major components are covered, write "research_complete.md" containing:
 - Risk register: blockers, gaps, open questions
 - Cross-references to all other artifacts written
 
-Begin immediately. Do not ask for confirmation. Derive your agenda from the project idea and start.`
-
+Begin immediately. Do not ask for confirmation. Derive your agenda from the project idea and start.
 
 CRITICAL: Write an artifact every 5-6 query calls - do not wait until research is complete. 
 Partial findings are valuable. You MUST write your first artifact before round 6 even if 
@@ -181,25 +180,25 @@ func RunResearch(ctx context.Context, agent QueryAgent, artifactDir string, idea
 		var resp *geminiResponse
 		var respErr error
 		for attempt := range 5 {
-    		resp, respErr = doGeminiRequest(ctx, apiKey, "gemini-3-flash-preview", req)
-    		if respErr == nil {
-        		break
-    		}
-    		if strings.Contains(respErr.Error(), "high demand") || strings.Contains(respErr.Error(), "temporarily") {
-        		waitSecs := time.Duration((attempt+1)*30) * time.Second
-        		logf("Rate limited, retrying in %s (attempt %d/5)...", waitSecs, attempt+1)
-        		select {
-        		case <-ctx.Done():
-            			return ctx.Err()
-        		case <-time.After(waitSecs):
-        		}
-        		continue
-    		}
-    		logf("ERROR: %v", respErr)
-    		return respErr
+			resp, respErr = doGeminiRequest(ctx, apiKey, "gemini-3-flash-preview", req)
+			if respErr == nil {
+				break
+			}
+			if strings.Contains(respErr.Error(), "high demand") || strings.Contains(respErr.Error(), "temporarily") {
+				waitSecs := time.Duration((attempt+1)*30) * time.Second
+				logf("Rate limited, retrying in %s (attempt %d/5)...", waitSecs, attempt+1)
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(waitSecs):
+				}
+				continue
+			}
+			logf("ERROR: %v", respErr)
+			return respErr
 		}
 		if respErr != nil {
-    			return fmt.Errorf("failed after 5 retries: %w", respErr)
+			return fmt.Errorf("failed after 5 retries: %w", respErr)
 		}
 		if len(resp.Candidates) == 0 {
 			logf("Empty response, stopping")
@@ -347,6 +346,7 @@ func doGeminiRequest(ctx context.Context, apiKey, model string, req geminiReques
 	}
 	return &gemResp, nil
 }
+
 // getHTTPClient returns the default HTTP client
 func getHTTPClient() *http.Client {
 	return http.DefaultClient
