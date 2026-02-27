@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
-
+	"odin/internal/orchestrator"
 	"odin/internal/distill"
 	"odin/internal/embedder"
 	"odin/internal/ingester"
@@ -21,10 +21,12 @@ const repoRoot = "/root/repos"
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: odin <ingest|distill|ask> [args]")
+		fmt.Println("Usage: odin <ingest|distill|ask|chat|research> [args]")
 		fmt.Println("  odin ingest <path>      - index a Go source tree")
 		fmt.Println("  odin distill [k8s]      - run architecture distillation pipeline")
-		fmt.Println("  odin ask                - interactive agent session")
+		fmt.Println("  odin ask                - interactive agent session  odin research [target]  - autonomous research session (writes artifacts)")
+		fmt.Println("  odin chat               - Gemini-orchestrated agent session")
+		fmt.Println("  odin research [target]  - autonomous research (reads ideas/<target>.md)")
 		os.Exit(1)
 	}
 
@@ -39,6 +41,18 @@ func main() {
 	must(st.EnsureCollection(ctx), "ensure collection")
 
 	switch os.Args[1] {
+	case "research":
+    		target := "jaeger"
+    		if len(os.Args) >= 3 {
+        		target = os.Args[2]
+    		}
+    		ideasFile := fmt.Sprintf("ideas/%s.md", target)
+		artifactsDir := fmt.Sprintf("artifacts/%s", target)
+    		researchAgent := query.NewAgent(llmClient, st, repoRoot)
+    		must(orchestrator.RunResearch(ctx, researchAgent, artifactsDir, ideasFile), "research")
+	case "chat":
+		agent := query.NewAgent(llmClient, st,repoRoot)
+		must(orchestrator.RunChat(ctx, agent), "chat")
 	case "ingest":
 		if len(os.Args) < 3 {
 			log.Fatal("usage: odin ingest <path>")
