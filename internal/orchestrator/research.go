@@ -166,9 +166,28 @@ func RunResearch(ctx context.Context, agent QueryAgent, artifactDir string, idea
 
 	var artifactsWritten []string
 	const maxRounds = 50
+	lastWriteRound := -1
 
 	for round := range maxRounds {
 		logf("--- Round %d ---", round+1)
+
+		// Hard enforcement: fire a write reminder every 5 rounds without an artifact.
+		// Using modulo so it fires once at rounds lastWrite+5, lastWrite+10, etc.
+		// (not every single round after the threshold, which would spam history).
+		roundsSinceWrite := round - lastWriteRound
+		if round > 0 && roundsSinceWrite >= 5 && roundsSinceWrite%5 == 0 {
+			nudge := fmt.Sprintf(
+				"REMINDER: You have made %d research queries without writing any artifact. "+
+					"You MUST call write_artifact RIGHT NOW before any more queries. "+
+					"Write everything you have learned so far — partial findings are valuable.",
+				roundsSinceWrite,
+			)
+			history = append(history, geminiContent{
+				Role:  "user",
+				Parts: []geminiPart{{Text: nudge}},
+			})
+			logf("  [nudge] injected write-artifact reminder (%d rounds since last write)", roundsSinceWrite)
+		}
 
 		req := geminiRequest{
 			SystemInstruction: system,
@@ -234,10 +253,18 @@ func RunResearch(ctx context.Context, agent QueryAgent, artifactDir string, idea
 					logf("  [query] -> %d chars", len(result))
 				}
 
+				// Truncate what goes into Gemini's history to prevent context overflow.
+				// The full result was already used by the local agent above.
+				const maxHistoryResult = 1500
+				historyResult := result
+				if len(historyResult) > maxHistoryResult {
+					historyResult = historyResult[:maxHistoryResult] + fmt.Sprintf("\n... [truncated %d chars for context efficiency]", len(result)-maxHistoryResult)
+				}
+
 				toolResultParts = append(toolResultParts, geminiPart{
 					FunctionResp: &functionResp{
 						Name:     "query_codebase",
-						Response: map[string]any{"result": result},
+						Response: map[string]any{"result": historyResult},
 					},
 				})
 
@@ -260,6 +287,7 @@ func RunResearch(ctx context.Context, agent QueryAgent, artifactDir string, idea
 				} else {
 					resultMsg = fmt.Sprintf("written: %s (%d bytes)", outPath, len(content))
 					artifactsWritten = append(artifactsWritten, filename)
+					lastWriteRound = round
 					logf("  [write] ✓ %s (%d bytes)", filename, len(content))
 				}
 
@@ -345,11 +373,6 @@ func doGeminiRequest(ctx context.Context, apiKey, model string, req geminiReques
 		return nil, fmt.Errorf("gemini error: %s", gemResp.Error.Message)
 	}
 	return &gemResp, nil
-}
-
-// getHTTPClient returns the default HTTP client
-func getHTTPClient() *http.Client {
-	return http.DefaultClient
 }
 
 func truncateStr(s string, n int) string {

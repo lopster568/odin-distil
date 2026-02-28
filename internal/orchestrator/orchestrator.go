@@ -29,11 +29,11 @@ type geminiContent struct {
 }
 
 type geminiPart struct {
-	Text         string        `json:"text,omitempty"`
-	FunctionCall *functionCall `json:"functionCall,omitempty"`
-	FunctionResp *functionResp `json:"functionResponse,omitempty"`
-    	Thought          bool          `json:"thought,omitempty"`
-    	ThoughtSignature string        `json:"thoughtSignature,omitempty"`
+	Text             string        `json:"text,omitempty"`
+	FunctionCall     *functionCall `json:"functionCall,omitempty"`
+	FunctionResp     *functionResp `json:"functionResponse,omitempty"`
+	Thought          bool          `json:"thought,omitempty"`
+	ThoughtSignature string        `json:"thoughtSignature,omitempty"`
 }
 
 type functionCall struct {
@@ -57,9 +57,9 @@ type functionDecl struct {
 }
 
 type schemaParam struct {
-	Type       string              `json:"type"`
+	Type       string                `json:"type"`
 	Properties map[string]schemaProp `json:"properties"`
-	Required   []string            `json:"required"`
+	Required   []string              `json:"required"`
 }
 
 type schemaProp struct {
@@ -117,6 +117,7 @@ func (o *Orchestrator) Chat(ctx context.Context, userMessage string) (string, er
 	})
 
 	// Agentic loop — Gemini may call query_codebase multiple times
+	var lastText string
 	for range 5 { // max 5 tool call rounds
 		resp, err := o.callGemini(ctx)
 		if err != nil {
@@ -130,11 +131,16 @@ func (o *Orchestrator) Chat(ctx context.Context, userMessage string) (string, er
 		candidate := resp.Candidates[0]
 		o.history = append(o.history, candidate.Content)
 
+		// Capture any text Gemini produced alongside or instead of tool calls.
+		if t := extractText(candidate.Content); t != "" {
+			lastText = t
+		}
+
 		// Check if Gemini wants to call a tool
 		toolCalls := extractToolCalls(candidate.Content)
 		if len(toolCalls) == 0 {
-			// No tool calls — extract final text answer
-			return extractText(candidate.Content), nil
+			// No tool calls — final text answer
+			return lastText, nil
 		}
 
 		// Execute each tool call and collect results
@@ -147,8 +153,8 @@ func (o *Orchestrator) Chat(ctx context.Context, userMessage string) (string, er
 					Response: map[string]any{"result": result},
 				},
 			})
-			fmt.Printf("  [tool] query_codebase(%q) → %d chars\n",
-				tc.Args["question"], len(result))
+			fmt.Printf("  [tool] %s(%q) → %d chars\n",
+				tc.Name, tc.Args["question"], len(result))
 		}
 
 		// Feed tool results back to Gemini
@@ -158,7 +164,11 @@ func (o *Orchestrator) Chat(ctx context.Context, userMessage string) (string, er
 		})
 	}
 
-	return "", fmt.Errorf("exceeded max tool call rounds")
+	// All rounds exhausted — return best text we captured rather than a hard error.
+	if lastText != "" {
+		return lastText, nil
+	}
+	return "", fmt.Errorf("exceeded max tool call rounds without a text response")
 }
 
 func (o *Orchestrator) callGemini(ctx context.Context) (*geminiResponse, error) {
